@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cassette</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/destyle.css@1.0.15/destyle.css"/><!-- reset.css -->
+    <!-- フォント -->
+    <link rel="stylesheet" href="https://use.typekit.net/ljl7syo.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js" type="module"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script><!-- gsap -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script><!-- scrolltiger -->
+    <script type="importmap">
+    {
+    "imports": {
+    "three": "https://unpkg.com/three@0.172.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.172.0/examples/jsm/"
+    }
+    }
+    </script><!-- three.js -->
+    <script type="module" src="js/ModelViewer.js"></script>
+    <script type="module" src="js/Model.js"></script>
+</head>
+<body>
+<main>
+    <div class="wrapper">
+        <div class="copy">
+            <p>play your music</p>
+        </div>
+        <div class="container">
+            <div class="text">
+                <h1>VHS</h1>
+                <p>choose your favorite color</p>
+            </div>
+            <div class="modelViewer">
+        
+            </div>
+            <div class="buttons">
+                <button class="play">play</button>
+                <button class="shuffle">shuffle</button>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
