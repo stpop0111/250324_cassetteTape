@@ -20,15 +20,20 @@
     }
     </script><!-- three.js -->
     <script type="module" src="js/ModelViewer.js"></script>
+    <script type="module" src="js/gsap.js"></script>
     <script type="module" src="js/Model.js"></script>
 </head>
 <body>
 <main>
     <div class="wrapper">
-        <div class="copy">
-            <p>🎵play your music</p>
-            <p>🎵play your music</p>
+
+        <!-- 流れるコピー -->
+        <div class="copy__box">
+            <p class="copy">🎵play your music</p>
+            <p class="copy">🎵play your music</p>
         </div>
+
+        <!-- メインコンテンツ -->
         <div class="container">
             <div class="text">
                 <h1>VHS</h1>
@@ -42,6 +47,30 @@
                 <button class="shuffle">shuffle</button>
             </div>
         </div>
+
+        <!-- modal -->
+        <div class="modal__wrapper">
+            <div class="modal">
+                <!-- 閉じるボタン -->
+                <button class="modal__closeButton"><svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 50 50"><path d="M 7.7070312 6.2929688 L 6.2929688 7.7070312 L 23.585938 25 L 6.2929688 42.292969 L 7.7070312 43.707031 L 25 26.414062 L 42.292969 43.707031 L 43.707031 42.292969 L 26.414062 25 L 43.707031 7.7070312 L 42.292969 6.2929688 L 25 23.585938 L 7.7070312 6.2929688 z"></path></svg>
+                </button>
+                <!-- モデルビューアー -->
+                <div class="modal__modelViewer">
+                </div>
+                <!-- テキスト -->
+                <div class="modal__contents">
+                    <div class="modal__textContents">
+                        <p class="modal__title">04版のテープ</p>
+                        <p class="modal__description">聞きなじみのない曲が入っている。不快だ。</p>
+                    </div>
+                    <div class="modal__buttons">
+                        <button class="modal__play">play</button>
+                        <button class="modal__shuffle">pause</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </main>
 </body>

@@ -91,6 +91,7 @@ class CassetteModel{
         this.camera.position.set(0, 15, 30); // (x, y, z)の位置にカメラを設定
         this.cameraTarget = new THREE.Vector3(0, 0, 0); // (x, y, z)の位置にカメラの注視点を設定
         this.camera.lookAt(this.cameraTarget); //カメラの視点を注視点に設定
+
     }
 
     /*環境テクスチャのロード
@@ -178,30 +179,88 @@ class CassetteModel{
         this.scene.add(sideLight);
     }
 
+    /*アニメーションの設定
+    =============================*/
     setupAnimation(){
-        this.animate();
+        this.clock = new THREE.Clock(); //クロックの作成
+        this.totalTime = 0; //経過時間を初期化
+        
+        // アニメーションバインド
+        this.animate = this.animate.bind(this);
+        
+        // モデル読み込み完了チェックを別に実行（一度だけ）
+        const checkLoaded = setInterval(() => {
+            if (this.models.length === this.modelDataArray.length) {
+                console.log('モデル読み込み完了: アニメーション開始');
+                this.floatingAnimation();
+                clearInterval(checkLoaded);
+            }
+        }, 200);
+        
+        // アニメーションスタート
+        requestAnimationFrame(this.animate);
     }
-
+    
     /*アニメーションループ
     =============================*/ 
     animate() {
-        requestAnimationFrame(this.animate.bind(this)); //アニメーションをリクエスト
+        const delta = this.clock.getDelta(); //経過時間を取得
+        this.totalTime += delta; //経過時間を加算
+        
+        // カメラの注視点を更新
+        this.updateCameraTarget();
+        
+        // レンダリング
+        this.renderer.render(this.scene, this.camera);
+        
+        // 次のフレームをリクエスト
+        requestAnimationFrame(this.animate);
+    }
+    
+    /*浮遊アニメーション
+    =============================*/
+    floatingAnimation(){
+        console.log('浮遊アニメーション開始: モデル数 = ' + this.models.length);
+        
+        this.models.forEach((modelObj, i) => {
+            const model = modelObj.model;
+            const initialY = model.position.y;
+            
+            // duration が0にならないよう修正
+            const duration = 1.5 + (i * 0.5);
+            
+            console.log(`モデル${modelObj.id}のアニメーション設定: duration = ${duration}`);
+            
+            gsap.to(model.position, {
+                y: initialY + 0.2,
+                duration: duration,
+                ease: 'power1.inOut',
+                repeat: -1,
+                yoyo: true,
+            });
+        });
+    }
 
+    /*カメラの注視点を更新
+    =============================*/
+    updateCameraTarget(){
         if (this.models.length > 0) {
             this.modelCenter.set(0, 0, 0); //モデルの中心座標をリセット
 
             let tempCenter = new THREE.Vector3(); //一時的な中心座標を作成
+
             this.models.forEach((modelObj) => {
                 modelObj.model.getWorldPosition(tempCenter); //モデルのグローバル座標を取得
                 this.modelCenter.add(tempCenter); //中心座標に加算
             });
-        this.modelCenter.divideScalar(this.models.length); //中心座標をモデル数で割る
-        this.modelCenter.y += 0.3;
-    }else{
-        this.modelGroup.getWorldPosition(this.modelCenter); //モデルグループのグローバル座標を取得
-    }
-        this.camera.lookAt(this.modelCenter); //カメラの視点を中心座標に設定
 
-        this.renderer.render(this.scene, this.camera); //レンダリング
+            this.modelCenter.divideScalar(this.models.length); //中心座標をモデル数で割る
+            this.modelCenter.y += 0.3;
+
+        }else{
+            this.modelGroup.getWorldPosition(this.modelCenter); //モデルグループのグローバル座標を取得
+        }
+        this.camera.lookAt(this.modelCenter); //カメラの視点を中心座標に設定
+        
     }
 }
