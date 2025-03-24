@@ -82,13 +82,15 @@ class CassetteModel{
     setupCamera(){
         const aspect = this.container.clientWidth / this.container.clientHeight; //縦横比を要素から取得
         this.camera = new THREE.PerspectiveCamera(
-            25, //視野角75°
+            10, //視野角
             aspect, //カメラ比率を要素の縦横比
             0.1, //カメラの最短描画距離
             1000 //カメラの最長描画距離
         );
 
-        this.camera.position.set(0, 0, 20);
+        this.camera.position.set(0, 15, 30); // (x, y, z)の位置にカメラを設定
+        this.cameraTarget = new THREE.Vector3(0, 0, 0); // (x, y, z)の位置にカメラの注視点を設定
+        this.camera.lookAt(this.cameraTarget); //カメラの視点を注視点に設定
     }
 
     /*環境テクスチャのロード
@@ -108,7 +110,8 @@ class CassetteModel{
     =============================*/
     setupModelGrpup(){
         this.scene.add(this.modelGroup);
-        this.modelGroup.rotation.y = THREE.MathUtils.degToRad(-6); //モデルグループのY軸を回転
+        this.modelGroup.rotation.y = THREE.MathUtils.degToRad(-45); //モデルグループのY軸を回転
+        this.modelCenter = new THREE.Vector3(); //モデルの中心座標を取得
     }
 
     /*モデルのロード
@@ -183,7 +186,22 @@ class CassetteModel{
     =============================*/ 
     animate() {
         requestAnimationFrame(this.animate.bind(this)); //アニメーションをリクエスト
-        
+
+        if (this.models.length > 0) {
+            this.modelCenter.set(0, 0, 0); //モデルの中心座標をリセット
+
+            let tempCenter = new THREE.Vector3(); //一時的な中心座標を作成
+            this.models.forEach((modelObj) => {
+                modelObj.model.getWorldPosition(tempCenter); //モデルのグローバル座標を取得
+                this.modelCenter.add(tempCenter); //中心座標に加算
+            });
+        this.modelCenter.divideScalar(this.models.length); //中心座標をモデル数で割る
+        this.modelCenter.y += 0.3;
+    }else{
+        this.modelGroup.getWorldPosition(this.modelCenter); //モデルグループのグローバル座標を取得
+    }
+        this.camera.lookAt(this.modelCenter); //カメラの視点を中心座標に設定
+
         this.renderer.render(this.scene, this.camera); //レンダリング
     }
 }
