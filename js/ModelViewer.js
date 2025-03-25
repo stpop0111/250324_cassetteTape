@@ -25,6 +25,14 @@ class CassetteModel{
         this.models = [];
         this.modelGroup = new THREE.Group();
 
+        //レイキャスト（当たり判定）関連の変数
+        this.raycaster = null;
+        this.mouse = null;
+
+        // アニメーション関連の変数
+        this.clock = new THREE.Clock(); //クロックの作成
+        this.totalTime = 0; //経過時間を初期化
+
         this.init();
     }
 
@@ -148,6 +156,8 @@ class CassetteModel{
                     model: model, //モデルデータ
                     id: modelData.id, //モデルID
                     index: i, //モデルのインデックス
+                    isFloating: false,
+                    isLoaded: true,
                 });
 
                 console.log(`モデル${modelData.id}の読み込み完了`);     
@@ -182,63 +192,53 @@ class CassetteModel{
     /*アニメーションの設定
     =============================*/
     setupAnimation(){
-        this.clock = new THREE.Clock(); //クロックの作成
-        this.totalTime = 0; //経過時間を初期化
-        
-        // アニメーションバインド
         this.animate = this.animate.bind(this);
-        
-        // モデル読み込み完了チェックを別に実行（一度だけ）
-        const checkLoaded = setInterval(() => {
-            if (this.models.length === this.modelDataArray.length) {
-                console.log('モデル読み込み完了: アニメーション開始');
-                this.floatingAnimation();
-                clearInterval(checkLoaded);
+        const checkModelsLoaded = setInterval(() => {
+            if(this.models.length === this.modelDataArray.length){
+                clearInterval(checkModelsLoaded);
+                this.floatingAnimate();
             }
-        }, 200);
-        
-        // アニメーションスタート
+        }, 100);
         requestAnimationFrame(this.animate);
     }
     
+    /* 浮遊アニメーション
+    ======================ß=======*/
+    floatingAnimate(){
+        this.models.forEach((modelObj, i) => {
+            
+            const model = modelObj.model;
+            const initY = model.position.y;
+
+            if(!model.isFloating && model.isLoaded) { //モデルの状態がロードされているとき
+
+                const tl = gsap.timeline({repeat: -1, yoyo: true});
+
+                tl.to(model.position, {
+                    y: initY + 0.1,
+                    duration: 1,
+                    ease: "power2.inOut",
+                });
+
+                modelObj.isFloating = true;
+
+            }
+
+
+        });
+    }
+
     /*アニメーションループ
     =============================*/ 
     animate() {
         const delta = this.clock.getDelta(); //経過時間を取得
         this.totalTime += delta; //経過時間を加算
-        
+
         // カメラの注視点を更新
         this.updateCameraTarget();
-        
         // レンダリング
         this.renderer.render(this.scene, this.camera);
-        
-        // 次のフレームをリクエスト
         requestAnimationFrame(this.animate);
-    }
-    
-    /*浮遊アニメーション
-    =============================*/
-    floatingAnimation(){
-        console.log('浮遊アニメーション開始: モデル数 = ' + this.models.length);
-        
-        this.models.forEach((modelObj, i) => {
-            const model = modelObj.model;
-            const initialY = model.position.y;
-            
-            // duration が0にならないよう修正
-            const duration = 1.5 + (i * 0.5);
-            
-            console.log(`モデル${modelObj.id}のアニメーション設定: duration = ${duration}`);
-            
-            gsap.to(model.position, {
-                y: initialY + 0.2,
-                duration: duration,
-                ease: 'power1.inOut',
-                repeat: -1,
-                yoyo: true,
-            });
-        });
     }
 
     /*カメラの注視点を更新
@@ -261,6 +261,5 @@ class CassetteModel{
             this.modelGroup.getWorldPosition(this.modelCenter); //モデルグループのグローバル座標を取得
         }
         this.camera.lookAt(this.modelCenter); //カメラの視点を中心座標に設定
-        
     }
 }

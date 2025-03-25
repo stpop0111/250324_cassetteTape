@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     const repeatableText = new RepeatableText();
-    const opening = new Opening();
 });
 
 
