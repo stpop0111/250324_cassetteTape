@@ -48,10 +48,10 @@ p, button{
 
 .text {
     position: absolute;
-    top: 1rem;
+    top: 50%;
     left: 50%;
-    z-index: 2;
-    transform: translate(-50%, 0);
+    z-index: 0;
+    transform: translate(-50%, -50%);
 }
 
 .text h1 {
@@ -59,11 +59,14 @@ p, button{
     font-family: "modak", sans-serif;
     font-weight: 400;
     font-style: normal;
-    font-size: clamp(14rem, 5vw, 14rem);
+    font-size: 30vw;
     line-height: 1;
-    color: var(--color-Black);
     text-align: center;
     letter-spacing: -0.01em;
+    aspect-ratio: 16/9;
+    color: rgb(from var(--color-White) r g b / 0.5);
+    border-radius: 16px;
+
 }
 
 .text p {
