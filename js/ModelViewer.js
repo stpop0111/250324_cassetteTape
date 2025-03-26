@@ -222,7 +222,6 @@ class CassetteModel{
                             z: model.rotation.z
                         }
                     };
-                    this.setModelOpacity(model, 0);
 
                     loadedCount++; //ロードカウントを増やす
                     resolve(model); //モデルを返す
@@ -267,19 +266,6 @@ class CassetteModel{
     =============================*/
     setupOpeningAnimation() {
         const tl = gsap.timeline();
-        this.models.forEach((model, i) => {
-            tl.to(model.userData, {
-                duration: 0.3,
-                opacity: 1,
-                delay: i * 0.2,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    this.setModelOpacity(model, model.userData.opacity);
-                }
-            }); // 少し重ねて開始
-        });
-        
-        return tl;
     }
 
     /*マウスイベントの設定
@@ -339,35 +325,5 @@ class CassetteModel{
         }
         
         return null; // 見つからなかった場合
-    }
-
-    /*モデルの不透明度を設定する関数
-    =============================*/
-    setModelOpacity(model, opacity) {
-    // 透明度を 0.0 から 1.0 の範囲に制限
-    opacity = Math.max(0, Math.min(1, opacity));
-
-    // モデル内のすべてのメッシュを走査
-    model.traverse(child => {
-        if (child.isMesh && child.material) {
-            // 単一のマテリアルの場合
-            if (!Array.isArray(child.material)) {
-                // マテリアルに透明を有効化
-                child.material.transparent = true;
-                // 不透明度を設定
-                child.material.opacity = opacity;
-                // マテリアルの更新フラグを立てる
-                child.material.needsUpdate = true;
-            } 
-            // 複数のマテリアルを持つ場合（マテリアル配列）
-            else {
-                child.material.forEach(mat => {
-                    mat.transparent = true;
-                    mat.opacity = opacity;
-                    mat.needsUpdate = true;
-                });
-            }
-        }
-    });
     }
 }
