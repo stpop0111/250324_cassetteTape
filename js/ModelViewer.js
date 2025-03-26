@@ -140,6 +140,24 @@ class CassetteModel{
         );
     }
 
+        /*ライトの作成
+    =============================*/
+    setupLights() {
+        // 環境光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 5);
+        this.scene.add(ambientLight);
+
+        // 方向光源
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+        directionalLight.position.set(0, 0, 5);
+        this.scene.add(directionalLight);
+        
+        // 追加光源（Y軸回転に合わせて配置）
+        const sideLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        sideLight.position.set(5, 0, 0);
+        this.scene.add(sideLight);
+    }
+
     /*モデルグループの作成
     =============================*/
     setupModelGrpup(){
@@ -204,9 +222,10 @@ class CassetteModel{
                             z: model.rotation.z
                         }
                     };
+                    this.setModelOpacity(model, 0);
 
-                    resolve(model); //モデルを返す
                     loadedCount++; //ロードカウントを増やす
+                    resolve(model); //モデルを返す
                 });
             });
         });
@@ -216,6 +235,11 @@ class CassetteModel{
         this.models.forEach((model) => {model.userData.isLoaded = true;}); //全てのモデルがロードされたらフラグを立てる
         this.setupModelBounds(); //モデルのバウンディングボックスを設定
         this.updateCameraPosition(); //カメラの位置を更新
+
+        await new Promise((resolve) => {
+            setTimeout(resolve, 1000);
+        });
+
         this.setupOpeningAnimation(); //オープニングアニメーションを設定
     }
 
@@ -225,24 +249,6 @@ class CassetteModel{
         this.box = new THREE.Box3().setFromObject(this.modelGroup); //モデルグループのバウンディングボックスを取得
         this.center = this.box.getCenter(new THREE.Vector3()); //バウンディングボックスの中心座標を取得
         this.size = this.box.getSize(new THREE.Vector3()); //バウンディングボックスのサイズを取得
-    }
-
-    /*ライトの作成
-    =============================*/
-    setupLights() {
-        // 環境光
-        const ambientLight = new THREE.AmbientLight(0xffffff, 5);
-        this.scene.add(ambientLight);
-
-        // 方向光源
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-        directionalLight.position.set(0, 0, 5);
-        this.scene.add(directionalLight);
-        
-        // 追加光源（Y軸回転に合わせて配置）
-        const sideLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        sideLight.position.set(5, 0, 0);
-        this.scene.add(sideLight);
     }
 
     /*アニメーションの設定
@@ -257,73 +263,28 @@ class CassetteModel{
         renderLoop();
     }
 
+    /*オープニングアニメーションの設定
+    =============================*/
     setupOpeningAnimation() {
         const tl = gsap.timeline();
-        tl.from(this.camera.position, {
-            duration: 1.5,
-            y: 10,
-            ease: "power3.inOut",
-        });
-    }
-
-    /*浮遊アニメーションの設定
-    =============================*/
-    setupFloatingAnimation() {
-        
-        // 各モデルに一度だけアニメーションを設定
         this.models.forEach((model, i) => {
-            if (model.userData.isLoaded) {
-                // 初期位置を保存（基準点）
-                const baseY = model.position.y;
-                
-                const tl = gsap.timeline({ repeat: -1, yoyo: true });
-                tl.to(model.position, {
-                    y: baseY + 0.3, 
-                    duration: 1.5,
-                    delay: i * 0.1, // モデルごとに遅延
-                    ease: "power3.inOut",
-                });
-
-                // モデルにアニメーションを保存
-                model.userData.timeline = tl;
-
-            }
+            tl.to(model.userData, {
+                duration: 0.3,
+                opacity: 1,
+                delay: i * 0.2,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    this.setModelOpacity(model, model.userData.opacity);
+                }
+            }); // 少し重ねて開始
         });
+        
+        return tl;
     }
 
     /*マウスイベントの設定
     =============================*/
     setUpMouseEvents(){
-
-        // クリックされたときのイベント
-        this.container.addEventListener('click', (e) => {
-
-            this.pointer.x = ((e.clientX - this.rect.left) / this.rect.width) * 2 - 1;
-            this.pointer.y = -((e.clientY - this.rect.top) / this.rect.height) * 2 + 1;
-            this.raycaster.setFromCamera(this.pointer, this.camera);
-            const intersects = this.raycaster.intersectObjects(this.modelGroup.children, true);
-
-            if (intersects.length > 0) {
-                const clickedObject = intersects[0].object;
-                const clickedModel = this.findParentModel(clickedObject);
-                
-                // if (clickedModel && clickedModel.userData) { console.log("クリックされたモデル情報:", { id: clickedModel.userData.id, title: clickedModel.userData.title, description: clickedModel.userData.description, isHovered: clickedModel.userData.isHovered, isLoaded: clickedModel.userData.isLoaded }); } else { console.log("モデル情報が見つかりませんでした", clickedObject); }
-
-                if (clickedModel.userData.isClicked){
-                    clickedModel.userData.isClicked = false;
-                    gsap.to(clickedModel.position, {
-                        y: clickedModel.userData.currentPos.y,
-                        duration: 0.1,
-                    });
-                } else {
-                    clickedModel.userData.isClicked = true;
-                    gsap.to(clickedModel.position, {
-                        y: clickedModel.userData.currentPos.y + 0.1,
-                        duration: 0.1,
-                    });
-                }
-            }
-        });
 
         // マウスオーバー時のイベント
         this.container.addEventListener('mousemove', (e) => {
@@ -339,10 +300,10 @@ class CassetteModel{
                 if (hoveredModel && hoveredModel.userData) {
                     if (!hoveredModel.userData.isHovered) {
                         hoveredModel.userData.isHovered = true;
-                        
+
                         gsap.to(hoveredModel.position, {
-                            y: hoveredModel.userData.currentPos.y + 1,
-                            duration: 0.1,
+                            y: hoveredModel.userData.currentPos.y + 0.1,
+                            duration: 0.5,
                         });
                     }
                 }
@@ -352,7 +313,7 @@ class CassetteModel{
                         model.userData.isHovered = false;
                         gsap.to(model.position, {
                             y: model.userData.currentPos.y,
-                            duration: 0.1,
+                            duration: 0.5,
                         });
                     }
                 });
@@ -378,5 +339,35 @@ class CassetteModel{
         }
         
         return null; // 見つからなかった場合
+    }
+
+    /*モデルの不透明度を設定する関数
+    =============================*/
+    setModelOpacity(model, opacity) {
+    // 透明度を 0.0 から 1.0 の範囲に制限
+    opacity = Math.max(0, Math.min(1, opacity));
+
+    // モデル内のすべてのメッシュを走査
+    model.traverse(child => {
+        if (child.isMesh && child.material) {
+            // 単一のマテリアルの場合
+            if (!Array.isArray(child.material)) {
+                // マテリアルに透明を有効化
+                child.material.transparent = true;
+                // 不透明度を設定
+                child.material.opacity = opacity;
+                // マテリアルの更新フラグを立てる
+                child.material.needsUpdate = true;
+            } 
+            // 複数のマテリアルを持つ場合（マテリアル配列）
+            else {
+                child.material.forEach(mat => {
+                    mat.transparent = true;
+                    mat.opacity = opacity;
+                    mat.needsUpdate = true;
+                });
+            }
+        }
+    });
     }
 }
