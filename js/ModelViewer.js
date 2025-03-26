@@ -26,7 +26,7 @@ class CassetteModel{
         this.modelGroup = new THREE.Group();
 
         //レイキャスト（当たり判定）関連の変数
-        this.raycaster = null;
+        this.raycasterg = null;
         this.mouse = null;
 
         // アニメーション関連の変数
@@ -127,15 +127,16 @@ class CassetteModel{
     =============================*/
     setupLoadModel(){
         this.loader = new GLTFLoader();
+        let loadedCount = 0;
+        const totalModels = this.modelDataArray.length;
 
         this.modelDataArray.forEach((modelData, i )=> {
             this.loader.load(modelData.path, (gltf) => {
                 const model = gltf.scene;
-
+                // マテリアルの設定
                 model.traverse((child) => {
                     if(child.isMesh){
                         const material = child.material; //マテリアルを取得
-                        
                         //マテリアルがテクスチャを持っている場合
                         if(material.map){
                             material.transparent = true; //透過を有効にする
@@ -144,7 +145,6 @@ class CassetteModel{
                             material.depthWrite = true; //デプスバッファを有効にする
                             material.needsUpdate = true; //マテリアルを更新
                         }
-                        
                     }
                 });
 
@@ -160,7 +160,14 @@ class CassetteModel{
                     isLoaded: true,
                 });
 
-                console.log(`モデル${modelData.id}の読み込み完了`);     
+                loadedCount++; //ロード完了数をカウント
+
+                const modelObj = this.models[this.models.length - 1];
+                console.log(`
+                    モデル${modelObj.id}の読み込み完了
+                    ロード済み:${modelObj.isLoaded}
+                    浮遊ずみ:${modelObj.isFloating}
+                    `); 
             },
             (progress) => {
                 console.log(`モデル${modelData.id}の読み込み中:,${(progress.loaded / progress.total) * 100}%`);
@@ -189,57 +196,76 @@ class CassetteModel{
         this.scene.add(sideLight);
     }
 
-    /*アニメーションの設定
-    =============================*/
-    setupAnimation(){
-        this.animate = this.animate.bind(this);
-        const checkModelsLoaded = setInterval(() => {
-            if(this.models.length === this.modelDataArray.length){
-                clearInterval(checkModelsLoaded);
-                this.floatingAnimate();
-            }
-        }, 100);
-        requestAnimationFrame(this.animate);
-    }
-    
-    /* 浮遊アニメーション
-    ======================ß=======*/
-    floatingAnimate(){
-        this.models.forEach((modelObj, i) => {
-            
-            const model = modelObj.model;
-            const initY = model.position.y;
+/* 浮遊アニメーション - 修正版
+=============================*/
+setupFloatingAnimation() {
+    // モデルがすべて読み込まれたら一度だけ呼び出す
+    this.models.forEach((modelObj, i) => {
+        if (!modelObj.isLoaded) return;
 
-            if(!model.isFloating && model.isLoaded) { //モデルの状態がロードされているとき
+        const model = modelObj.model;
+        const initY = model.position.y;
+        
+        // 各モデルで少し位相をずらして波打つ効果を出す
+        const delay = i * 0.3;
 
-                const tl = gsap.timeline({repeat: -1, yoyo: true});
-
-                tl.to(model.position, {
-                    y: initY + 0.1,
-                    duration: 1,
-                    ease: "power2.inOut",
-                });
-
-                modelObj.isFloating = true;
-
-            }
-
-
+        // 浮遊アニメーションを設定（無限ループ）
+        gsap.to(model.position, {
+            y: initY + 0.3, // より大きく浮かせる
+            duration: 1.5, // より長い持続時間
+            delay: delay, // モデルごとに開始タイミングをずらす
+            ease: "sine.inOut", // より滑らかなイージング
+            repeat: -1, // 無限繰り返し
+            yoyo: true, // 上下に揺れる動き
         });
-    }
+        
+        // 浮遊フラグを設定
+        modelObj.isFloating = true;
+        
+        console.log(`モデル${modelObj.id}の浮遊アニメーションを設定しました`);
+    });
+}
 
-    /*アニメーションループ
-    =============================*/ 
-    animate() {
-        const delta = this.clock.getDelta(); //経過時間を取得
-        this.totalTime += delta; //経過時間を加算
+/*アニメーションの設定
+=============================*/
+setupAnimation() {
+    this.clock = new THREE.Clock();
+    this.totalTime = 0;
+    
+    // アニメーションのバインド
+    this.animate = this.animate.bind(this);
+    
+    // モデルのロード状況をチェック
+    const checkModels = setInterval(() => {
+        // すべてのモデルが読み込まれたかチェック
+        if (this.models.length === this.modelDataArray.length) {
+            console.log('全モデルのロードが完了しました。浮遊アニメーションを開始します。');
+            
+            // 浮遊アニメーションを設定（一度だけ呼び出し）
+            this.setupFloatingAnimation();
+            
+            // チェック終了
+            clearInterval(checkModels);
+        }
+    }, 500); // 500ミリ秒ごとにチェック
+    
+    // アニメーションループを開始
+    requestAnimationFrame(this.animate);
+}
 
-        // カメラの注視点を更新
-        this.updateCameraTarget();
-        // レンダリング
-        this.renderer.render(this.scene, this.camera);
-        requestAnimationFrame(this.animate);
-    }
+/*アニメーションループ - 修正版
+=============================*/ 
+animate() {
+    const delta = this.clock.getDelta();
+    this.totalTime += delta;
+
+    this.updateCameraTarget();
+    
+    this.renderer.render(this.scene, this.camera);
+    
+    // 次のフレームをリクエスト
+    requestAnimationFrame(this.animate);
+}
 
     /*カメラの注視点を更新
     =============================*/
