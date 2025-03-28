@@ -96,13 +96,13 @@ class CassetteModel{
             0.1,
             1000
         );
-        this.camera.rotation.set(0, Math.PI, 0);
+        this.camera.rotation.set(0, 0, 0);
         this.scene.add(this.camera);
     
         this.cameraCurrentPosition = {
             x: 0,
             y: 0,
-            z: -5,
+            z: 0,
         };
     
         this.updateCameraPosition = () => {
@@ -112,7 +112,7 @@ class CassetteModel{
     
             this.camera.position.set(
                 this.center.x,
-                this.center.y + 15,
+                this.center.y,
                 this.center.z + distance
             );
     
@@ -140,7 +140,7 @@ class CassetteModel{
         );
     }
 
-        /*ライトの作成
+    /*ライトの作成
     =============================*/
     setupLights() {
         // 環境光
@@ -162,7 +162,6 @@ class CassetteModel{
     =============================*/
     setupModelGrpup(){
         this.scene.add(this.modelGroup);
-        this.modelGroup.rotation.y = THREE.MathUtils.degToRad(-45); //モデルグループのY軸を回転
         this.modelCenter = new THREE.Vector3(); //モデルの中心座標を取得
     }
 
@@ -195,7 +194,7 @@ class CassetteModel{
                         }
                     });
 
-                    model.position.set(0, 0, i * -0.5); //モデルの位置を設定
+                    model.position.set(0, i * 0.5, i * -0.5); //モデルの位置を設定
                     model.receiveShadow = true; //影を受け取る
                     model.castShadow = true; //影を投影する
                     
@@ -268,45 +267,73 @@ class CassetteModel{
         const tl = gsap.timeline();
     }
 
-    /*マウスイベントの設定
-    =============================*/
-    setUpMouseEvents(){
+/*マウスイベントの設定
+=============================*/
+setUpMouseEvents() {
+    // レイキャスターを作成
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+    
+    // 現在ホバーしているモデル
+    this.hoveredModel = null;
+    
+    // マウスクリックイベント
+    this.container.addEventListener('click', (event) => {
+        // マウス座標を正規化（-1から1の範囲に変換）
+        const rect = this.container.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / this.container.clientWidth) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / this.container.clientHeight) * 2 + 1;
+        
+        // レイキャスト更新
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        
+        // 交差判定
+        const intersects = this.raycaster.intersectObjects(this.models, true);
+        
+        if (intersects.length > 0) {
+            const modal = document.querySelector('.modal__wrapper');
+            const clickedModel = this.findParentModel(intersects[0].object);
 
-        // マウスオーバー時のイベント
-        this.container.addEventListener('mousemove', (e) => {
-            this.pointer.x = ((e.clientX - this.rect.left) / this.rect.width) * 2 - 1;
-            this.pointer.y = -((e.clientY - this.rect.top) / this.rect.height) * 2 + 1;
-            this.raycaster.setFromCamera(this.pointer, this.camera);
-            const intersects = this.raycaster.intersectObjects(this.modelGroup.children, true);
+            modal.style.display = 'block';
+            modal.style.opacity = 0;
 
-            if (intersects.length > 0) {
-                const hoveredObject = intersects[0].object;
-                const hoveredModel = this.findParentModel(hoveredObject);
-
-                if (hoveredModel && hoveredModel.userData) {
-                    if (!hoveredModel.userData.isHovered) {
-                        hoveredModel.userData.isHovered = true;
-
-                        gsap.to(hoveredModel.position, {
-                            y: hoveredModel.userData.currentPos.y + 0.1,
-                            duration: 0.5,
-                        });
+            const tl = gsap.timeline();
+            tl
+            .to(modal, {
+                opacity: 1,
+                duration: 2,
+                ease: "power2.out"
+            },)
+            .from(".modal", {
+                opacity: 0,
+                scale: 1.2,
+                filter: "blur(10px)",
+            },"<")
+            .to(".modal", {
+                scale: 1,
+                filter: "blur(0px)",
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out"
+            });
+            
+            modal.querySelector('.modal__title').textContent = clickedModel.userData.title;
+            modal.querySelector('.modal__description').textContent = clickedModel.userData.description;
+            
+            modal.querySelector('.modal__closeButton').addEventListener('click', () => {
+                gsap.to(modal, {
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        modal.style.display = 'none';
                     }
-                }
-            } else {
-                this.models.forEach((model) => {
-                    if (model.userData.isHovered) {
-                        model.userData.isHovered = false;
-                        gsap.to(model.position, {
-                            y: model.userData.currentPos.y,
-                            duration: 0.5,
-                        });
-                    }
-                });
-            }
-        });
-    }
-
+                })
+            });
+        }
+        
+    });
+}
     /*クリックされたオブジェクトの親モデルを特定するヘルパー関数
     =============================*/
     findParentModel(object) {

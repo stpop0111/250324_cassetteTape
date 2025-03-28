@@ -151,6 +151,8 @@ p, button{
     left: 50%;
     z-index: 100;
     width: 70%;
+    padding: 1rem;
+    gap: 1rem;
     aspect-ratio: 16/9;
     background: rgb(from var(--color-White) r g b / 0.5);
     border-radius: 16px;
@@ -164,6 +166,8 @@ p, button{
 .modal__modelViewer {
     width: 60%;
     height: 100%;
+
+    background: #f7f7f7;
 }
 
 .modal__contents {
@@ -171,8 +175,6 @@ p, button{
     flex-direction: column;
     justify-content: space-between;
     gap: 1rem;
-    padding: 2rem;
-
 }
 
 .modal__textContents {
@@ -206,19 +208,9 @@ p, button{
     transition: all 0.4s ease;
 }
 
-/* ホバー時のエフェクト */
-.modal__closeButton:hover {
-    background: var(--color-Black);
-}
-
-.modal__closeButton:hover svg{
-    transform: rotate(90deg);
-    fill: var(--color-White);
-}
-
 .modal__buttons {
     display: flex;
-    justify-content: space-around;
+    gap: 1rem;
 }
 
 .modal__buttons button {
